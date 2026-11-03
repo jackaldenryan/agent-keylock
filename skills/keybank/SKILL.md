@@ -73,7 +73,9 @@ Do not print `os.environ`. Do not look for a key in it.
 ~/.local/libexec/api-key-lock/keylock auth 1d
 ```
 
-Changing the setting requires Touch ID. Do not edit a file to change it. For a long job, tell the user to set a window such as `3h` in their own Terminal, then run scripts against `OPENAI_BASE_URL` during that window. Do not invent a second session protocol.
+Changing the setting requires Touch ID. Do not edit a file or a Keychain item to change it. The setting is held in memory by the signed binary. It lasts until logout or restart. If `keylock auth` prints `always` after a reboot, that is expected. For a long job, tell the user to set a window such as `3h` in their own Terminal, then run scripts against `OPENAI_BASE_URL` during that window. Do not invent a second session protocol.
+
+`run` does not support `stream: true`. The proxy returns the response only after the upstream finishes. A streaming client can time out. Do not tell the user to turn streaming on to fix that.
 
 ## Run a program
 

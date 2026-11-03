@@ -27,3 +27,9 @@ This is an accepted platform limit. It is not fixed by the proxy. The proxy stil
 `keylock` itself calls Touch ID, with no password button and no reuse of a recent unlock, before it adds a key, changes the host list, or changes the auth setting. `run` follows that setting. The default is every time. Canceling a required prompt means the tool does not touch the secret.
 
 The signing key for `keylock` is kept in a separate keychain, not the login keychain. The password for that keychain is on disk so the tool can be rebuilt. An agent that can read that file can sign a trojan. Move that password off the machine before treating the signature as a boundary. See [README.md](README.md).
+
+## The auth setting is not a Keychain item
+
+`run` can be told to skip Touch ID. That choice cannot be a file, and it cannot be a Keychain item. A same-user agent can write a file. It can also create a Keychain item whose trusted-app list names this binary, including with `security add-generic-password -A`. `keylock` would then read `never` and skip the prompt.
+
+The shipped setting lives only in a helper process started by `keylock auth` after Touch ID. `run` accepts it only when that helper's code directory hash matches this binary. If the helper is missing, or the peer does not match, `run` asks every time. The setting does not survive logout or restart.

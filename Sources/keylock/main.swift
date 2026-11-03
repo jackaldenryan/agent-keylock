@@ -47,6 +47,8 @@ struct Keylock {
             try runCommand(Array(args.dropFirst()))
         case "auth":
             try auth(Array(args.dropFirst()))
+        case "auth-hold":
+            try AuthHold.serve()
         case "doctor":
             try doctor()
         case "help", "-h", "--help":
@@ -69,7 +71,8 @@ struct Keylock {
 
     The secret is never an argument. add reads it from /dev/tty after Touch ID.
     keylock auth changes how often run asks for Touch ID. Changing it requires Touch ID.
-    add and allow-host always require Touch ID.
+    The setting is held in memory by this binary. It is not a file or a Keychain item.
+    It lasts until logout, restart, or the helper exits. add and allow-host always require Touch ID.
     """
 
     static func list() throws {
@@ -193,21 +196,22 @@ struct Keylock {
             throw CLIError.message("\(host) is not on the host list")
         }
         let reason = try Reasons.run(id: id, host: host, sha256Prefix: prefix)
-        let auth = try KeychainStore.loadAuth()
+        let auth = AuthHold.current()
         let now = Date()
         fputs("Touch ID dialog is the approval. Terminal text is not.\n", stderr)
-        fputs("\(reason)\nexe=\(executable)\nsha256=\(digest)\n", stderr)
+        fputs("\(reason)\n", stderr)
+        fputs("The dialog names the key, the host, and that any local process can use the proxy until exit. It does not name the command.\n", stderr)
+        fputs("exe=\(executable)\nsha256=\(digest)\n", stderr)
         fputs("auth: \(AuthPolicy.describe(auth, now: now))\n", stderr)
         fputs("Any local process can use the proxy until this command exits. The named command is not a boundary.\n", stderr)
-        let before = try fileIdentity(executable)
         if AuthPolicy.needsFingerprint(auth, now: now) {
             try Fingerprint.require(reason: reason)
             if case .interval = auth.mode {
-                try KeychainStore.saveAuth(AuthPolicy.unlocked(after: Date(), mode: auth.mode))
+                try AuthHold.replace(AuthPolicy.unlocked(after: Date(), mode: auth.mode))
             }
         }
-        let after = try fileIdentity(executable)
-        guard before == after else {
+        let afterDigest = try sha256File(executable)
+        guard afterDigest == digest else {
             throw CLIError.message("executable changed after the dialog; refusing to run it")
         }
         let fresh = try KeychainStore.loadSecret(id: id)
@@ -247,8 +251,7 @@ struct Keylock {
 
     static func auth(_ args: [String]) throws {
         if args.isEmpty {
-            let state = try KeychainStore.loadAuth()
-            print(AuthPolicy.describe(state))
+            print(AuthPolicy.describe(AuthHold.current()))
             return
         }
         guard args.count == 1 else {
@@ -259,15 +262,16 @@ struct Keylock {
         let reason = "AUTH mode=\(AuthPolicy.describe(next))"
         fputs("Touch ID dialog is the approval. Terminal text is not.\n\(reason)\n", stderr)
         try Fingerprint.require(reason: reason)
-        try KeychainStore.saveAuth(next)
-        print(AuthPolicy.describe(next))
+        try AuthHold.replace(next)
+        print(AuthPolicy.describe(AuthHold.current()))
     }
 
     static func doctor() throws {
         let path = CommandLine.arguments[0]
         print("binary: \(path)")
         print("catalog: \(CatalogStore.fileURL.path)")
-        print("fingerprint: required by this tool before it reads a key")
+        print("auth: \(AuthPolicy.describe(AuthHold.current()))")
+        print("fingerprint: required for add, allow-host, revoke-host, and changing auth. run follows auth. default is always.")
         print("platform: other programs can still raise a Keychain Allow dialog. That dialog is not Touch ID. See PLATFORM.md")
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
@@ -305,13 +309,6 @@ struct Keylock {
     static func sha256File(_ path: String) throws -> String {
         let data = try Data(contentsOf: URL(fileURLWithPath: path))
         return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-    }
-
-    static func fileIdentity(_ path: String) throws -> (UInt64, UInt64) {
-        let values = try FileManager.default.attributesOfItem(atPath: path)
-        let inode = (values[.systemFileNumber] as? NSNumber)?.uint64Value ?? 0
-        let size = (values[.size] as? NSNumber)?.uint64Value ?? 0
-        return (inode, size)
     }
 
     static func readSecretFromTTY() throws -> Data {

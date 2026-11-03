@@ -72,6 +72,26 @@ final class KeylockCoreTests: XCTestCase {
         )
     }
 
+    func testAuthHoldIgnoresUntrustedSet() {
+        var state = AuthState.default
+        XCTAssertEqual(AuthHold.reply(to: "SET never", state: &state, trusted: false), "ERR")
+        XCTAssertEqual(state.mode, .always)
+        XCTAssertEqual(AuthHold.reply(to: "GET", state: &state, trusted: false), "ERR")
+        XCTAssertEqual(AuthHold.reply(to: "SET never", state: &state, trusted: true), "OK")
+        XCTAssertEqual(state.mode, .never)
+        XCTAssertEqual(AuthHold.reply(to: "GET", state: &state, trusted: true), "STATE never")
+    }
+
+    func testUpstreamKeepsQueryAndPinsHost() throws {
+        let url = try XCTUnwrap(Upstream.url(host: "api.openai.com", target: "/v1/models?limit=10"))
+        XCTAssertEqual(url.absoluteString, "https://api.openai.com/v1/models?limit=10")
+        XCTAssertNil(Upstream.url(host: "api.openai.com", target: "//evil.example/v1"))
+        XCTAssertNil(Upstream.url(host: "api.openai.com", target: "https://evil.example/v1"))
+        XCTAssertEqual(Upstream.keyHeaders(host: "api.openai.com", secret: Data("sk-test".utf8))["Authorization"], "Bearer sk-test")
+        XCTAssertEqual(Upstream.keyHeaders(host: "api.anthropic.com", secret: Data("sk-test".utf8))["x-api-key"], "sk-test")
+        XCTAssertNil(Upstream.keyHeaders(host: "api.anthropic.com", secret: Data("sk-test".utf8))["Authorization"])
+    }
+
     func testRejectsBadKeyID() {
         XCTAssertThrowsError(try KeyID.validate("OpenAI"))
         XCTAssertThrowsError(try KeyID.validate("../x"))

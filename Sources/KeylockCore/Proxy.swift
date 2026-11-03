@@ -124,11 +124,7 @@ public final class LocalProxy: @unchecked Sendable {
             buffer.append(contentsOf: chunk.prefix(count))
         }
         let body = buffer.subdata(in: bodyStart..<min(bodyStart + contentLength, buffer.endIndex))
-        var outbound = URLComponents()
-        outbound.scheme = "https"
-        outbound.host = host
-        outbound.path = target.hasPrefix("/") ? target : "/" + target
-        guard let url = outbound.url else {
+        guard let url = Upstream.url(host: host, target: target) else {
             writeStatic(client, status: 400, body: "denied")
             return
         }
@@ -141,15 +137,16 @@ public final class LocalProxy: @unchecked Sendable {
             let name = String(line[..<colon])
             let value = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
             let lower = name.lowercased()
-            if ["host", "authorization", "content-length", "proxy-authorization", "connection"].contains(lower) {
+            if ["host", "authorization", "content-length", "proxy-authorization", "connection", "accept-encoding", "x-api-key"].contains(lower) {
                 continue
             }
             if forwarded.contains(lower) { continue }
             forwarded.insert(lower)
             urlRequest.setValue(value, forHTTPHeaderField: name)
         }
-        if let text = String(data: secret, encoding: .utf8) {
-            urlRequest.setValue("Bearer \(text)", forHTTPHeaderField: "Authorization")
+        urlRequest.setValue("identity", forHTTPHeaderField: "Accept-Encoding")
+        for (name, value) in Upstream.keyHeaders(host: host, secret: secret) {
+            urlRequest.setValue(value, forHTTPHeaderField: name)
         }
         let session = Self.makeSession()
         let box = ResponseBox()
@@ -160,7 +157,7 @@ public final class LocalProxy: @unchecked Sendable {
                 for (key, value) in http.allHeaderFields {
                     let name = String(describing: key)
                     let lower = name.lowercased()
-                    if ["transfer-encoding", "content-length", "connection", "authorization"].contains(lower) {
+                    if ["transfer-encoding", "content-length", "connection", "authorization", "content-encoding"].contains(lower) {
                         continue
                     }
                     box.headers[name] = String(describing: value)
@@ -221,6 +218,36 @@ public final class LocalProxy: @unchecked Sendable {
                 sent += wrote
             }
         }
+    }
+}
+
+public enum Upstream {
+    public static func url(host: String, target: String) -> URL? {
+        guard target.hasPrefix("/"), !target.hasPrefix("//") else { return nil }
+        guard !target.contains("://"), !target.contains("@"), !target.contains("\\"), !target.contains(" "), !target.contains("#") else {
+            return nil
+        }
+        guard target.utf8.allSatisfy({ $0 >= 32 && $0 < 127 }) else { return nil }
+        let parts = target.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+        let path = String(parts[0])
+        guard path.hasPrefix("/") else { return nil }
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = host
+        components.percentEncodedPath = path
+        if parts.count == 2 {
+            components.percentEncodedQuery = String(parts[1])
+        }
+        guard let url = components.url, url.host == host, url.user == nil else { return nil }
+        return url
+    }
+
+    public static func keyHeaders(host: String, secret: Data) -> [String: String] {
+        guard let text = String(data: secret, encoding: .utf8), !text.isEmpty else { return [:] }
+        if host == "api.anthropic.com" {
+            return ["x-api-key": text]
+        }
+        return ["Authorization": "Bearer \(text)"]
     }
 }
 

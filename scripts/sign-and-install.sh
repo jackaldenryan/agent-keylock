@@ -60,26 +60,57 @@ EOF
   trap - EXIT
 fi
 
-if [[ ! -e "$HOME/Library/Keychains/${keychain_name}-db" && ! -e "$HOME/Library/Keychains/${keychain_name}.keychain-db" ]]; then
-  security create-keychain -p "$keychain_pass" "$keychain_name"
+previous=()
+while IFS= read -r line; do
+  path="${line//\"/}"
+  path="${path#"${path%%[![:space:]]*}"}"
+  path="${path%"${path##*[![:space:]]}"}"
+  [[ -n "$path" && -e "$path" ]] || continue
+  previous+=("$path")
+done < <(/usr/bin/security list-keychains -d user)
+if [[ ${#previous[@]} -eq 0 ]]; then
+  echo "refusing to replace an empty keychain search list" >&2
+  exit 1
 fi
-security unlock-keychain -p "$keychain_pass" "$keychain_name"
-# Add the signing keychain without dropping keychains the user already has.
-current="$(security list-keychains -d user | tr -d '"')"
-security list-keychains -d user -s "$keychain_name" $current
-security import "$p12" -k "$keychain_name" -P "$p12_pass" -T /usr/bin/codesign -T /usr/bin/security >/dev/null 2>&1 || true
-security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_pass" "$keychain_name" >/dev/null
+
+cleanup() {
+  /usr/bin/security lock-keychain "$keychain_name" >/dev/null 2>&1 || true
+  if [[ ${#previous[@]} -gt 0 ]]; then
+    /usr/bin/security list-keychains -d user -s "${previous[@]}" >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
+keychain_path="${HOME}/Library/Keychains/${keychain_name}-db"
+if [[ ! -e "$keychain_path" && ! -e "${HOME}/Library/Keychains/${keychain_name}.keychain-db" ]]; then
+  /usr/bin/security create-keychain -p "$keychain_pass" "$keychain_name"
+fi
+if [[ -e "${HOME}/Library/Keychains/${keychain_name}.keychain-db" ]]; then
+  keychain_path="${HOME}/Library/Keychains/${keychain_name}.keychain-db"
+fi
+
+/usr/bin/security unlock-keychain -p "$keychain_pass" "$keychain_name"
+search=("$keychain_path")
+for path in "${previous[@]}"; do
+  [[ "$path" == "$keychain_path" ]] && continue
+  search+=("$path")
+done
+/usr/bin/security list-keychains -d user -s "${search[@]}"
+if ! /usr/bin/security find-identity -v -p codesigning "$keychain_path" 2>/dev/null | grep -F "$identity" >/dev/null; then
+  /usr/bin/security import "$p12" -k "$keychain_path" -P "$p12_pass" -T /usr/bin/codesign -T /usr/bin/security
+fi
+/usr/bin/security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_pass" "$keychain_name" >/dev/null
 
 cd "$root"
 swift build -c release --product keylock
 cp -f .build/release/keylock "$binary"
 chmod 755 "$binary"
-codesign --force --sign "$identity" --keychain "$keychain_name" \
+/usr/bin/codesign --force --sign "$identity" --keychain "$keychain_name" \
   --options runtime \
   --identifier com.apikeylock.keylock \
   "$binary"
-security lock-keychain "$keychain_name"
 echo "installed $binary"
 echo "certificate: $identity"
 echo "signing secrets are in $support"
-echo "Move that folder off this Mac before treating the signature as a boundary against an agent."
+echo "signing keychain is $keychain_path"
+echo "Move both off this Mac before treating the signature as a boundary against an agent."

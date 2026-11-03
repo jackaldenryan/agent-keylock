@@ -45,7 +45,7 @@ Then move the signing key off the machine. It is created at:
 
 An agent that can read those files can sign a fake `keylock` that your Keychain will trust. Copy them to a disk you can unplug, delete the copies on the Mac, and eject the disk. Plug it back in only when you need to rebuild.
 
-Allow a host, then add a key. Each of these asks for Touch ID. The dialog text is the approval. Cancel if it is not exactly what you typed.
+Allow a host, then add a key. Each of these asks for Touch ID. The dialog text is the approval. Cancel if the host in the dialog is not the host you typed. The run dialog does not contain the command. It names the key, the host, and that any local process can use the proxy until that command exits.
 
 ```bash
 ~/.local/libexec/api-key-lock/keylock allow-host api.openai.com
@@ -64,7 +64,7 @@ Confirm a run works:
   /bin/sh -c '/usr/bin/curl -sS "$OPENAI_BASE_URL/models"'
 ```
 
-You should get a model list. `OPENAI_API_KEY` should be empty. The key never appears in the output.
+You should get a model list. `OPENAI_API_KEY` should be empty. The key never appears in the output. A request with a query string is forwarded. `stream: true` is not. The proxy waits for the full response, so a streaming client can time out.
 
 ## Install the agent skill
 
@@ -85,7 +85,7 @@ Without the skill, an agent will look for `OPENAI_API_KEY` and fail, or worse, a
 | --- | --- |
 | `api.openai.com` | `OPENAI_BASE_URL` (already ends in `/v1`) |
 | `api.x.ai` | `XAI_BASE_URL` and `OPENAI_BASE_URL` |
-| `api.anthropic.com` | `ANTHROPIC_BASE_URL` |
+| `api.anthropic.com` | `ANTHROPIC_BASE_URL` (the proxy sends `x-api-key`, not a bearer token) |
 | any other allowed host | `KEYLOCK_BASE_URL` |
 
 ```python
@@ -107,14 +107,16 @@ A request straight to `https://api.openai.com` has no key and will fail. That is
 ## How often run asks
 
 ```bash
-keylock auth            # show the current setting
-keylock auth always     # ask every run
-keylock auth never      # do not ask for run
-keylock auth 3h         # one fingerprint, then 3 hours
-keylock auth 1d         # one fingerprint, then 1 day
+~/.local/libexec/api-key-lock/keylock auth
+~/.local/libexec/api-key-lock/keylock auth always
+~/.local/libexec/api-key-lock/keylock auth never
+~/.local/libexec/api-key-lock/keylock auth 3h
+~/.local/libexec/api-key-lock/keylock auth 1d
 ```
 
-`30m` and `1h` work the same way. Changing this setting requires Touch ID, so an agent cannot turn it off by editing a file.
+`30m` and `1h` work the same way. Changing this setting requires Touch ID. The value is not a file and not a Keychain item. An agent can write both of those. It is held in memory by a helper that `run` accepts only when that helper is this signed binary. If the helper is not running, `run` asks every time.
+
+The setting lasts until you log out, restart, or the helper exits. It does not survive a reboot. Set it again after you log in.
 
 `never` and a long window mean an agent can spend the key at an approved host while you are away. Put a spending cap on the key at the provider. The proxy still will not reveal the key or send it to a host you have not allowed.
 
@@ -147,3 +149,7 @@ swift test
 Rebuild and reinstall with `./scripts/sign-and-install.sh`. After a rebuild, move the signing key off the Mac again.
 
 The code-signing identifier in a fresh install is `com.apikeylock.keylock`.
+
+## License
+
+All rights reserved. No license is granted for reuse until one is added.
