@@ -1,0 +1,17 @@
+.build/
+.DS_Store
+local/
+
+# Signing material. Never commit this.
+*.p12
+*.pem
+*password
+*.keychain-db
+
+# Local probe binaries from the platform experiment.
+Probe/probe-write
+Probe/probe-read
+Probe/se-write
+Probe/se-read
+Probe/login-write
+Probe/login-read
