@@ -1,16 +1,46 @@
 # Agent Keylock
 
-Let a coding agent use an API key without ever seeing it.
+Make it as hard as possible for a coding agent to read or exfiltrate an API key, even if that agent has full permission to your computer.
 
-Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. You store the secret in the Keychain. The agent can list names and descriptions. When a program needs the key, `keylock` starts a local proxy, your fingerprint approves the use unless you have chosen otherwise, and the proxy attaches the secret only for a host you already allowed.
+An agent can use a key. It cannot print it, export it, save it, or send it anywhere except the host you already allowed. The only use of the secret is an HTTP request to that host. The agent does not attach the secret. A local proxy does.
 
-The program gets a localhost address. It does not get the key.
+Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. It is macOS only.
 
-## What this is for
+## What an agent can and cannot do
 
-Coding agents can read files, run commands, and write programs. A key in a `.env` file is a key the agent can copy. This tool is the alternative: the agent can spend an approved key at an approved host, and it cannot print the key, save it, or send it somewhere else.
+A coding agent with full permission can read your files, run your commands, and write programs. That is the case this tool is built for. Full permission does not put the key in those files, in that command, or in a program the agent writes.
 
-It is macOS only. It needs Touch ID for the operations that change a key or a host.
+The agent may cause an approved key to be spent at one approved host. It may not:
+
+- print the key
+- export it
+- write it to a file, a log, or a chat
+- put it in an environment variable
+- send it to any host other than the one you allowed
+
+Those are not rules the agent is trusted to obey. The key is never handed over, so there is nothing for the agent to copy.
+
+## Where the key is stored
+
+The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. It is not stored in an environment file, a `.env` file, the catalog, or the command the agent runs. `keylock run` does not write the secret to disk.
+
+The file the agent may read, `~/.config/api-key-lock/catalog.json`, has names, descriptions, and hosts. It does not have secrets.
+
+Adding a key, allowing a host, and changing how often `run` asks all require Touch ID.
+
+## How the agent is told to run a command
+
+The skill tells the agent to wrap every command that needs a key:
+
+```bash
+~/.local/libexec/api-key-lock/keylock run openai-personal -- <command>
+```
+
+That wrapper does not save the secret, and it does not inject the secret into the command. It removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. It starts a proxy on `127.0.0.1` and points the command at that proxy. The proxy adds the key to the outbound HTTP request, and only for the host stored for that key. When the command exits, the proxy exits.
+
+A request straight to `https://api.openai.com` has no key. If `OPENAI_API_KEY` is empty, that is correct. The program got a localhost address. It did not get the key.
+
+This is the design. It is not a claim that a Keychain Allow dialog can be ignored, or that a signing key left on the Mac is safe. Those limits are below.
 
 ## Quickstart
 

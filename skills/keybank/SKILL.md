@@ -6,7 +6,10 @@ description: >
   key", "load the API key", "which API keys do I have", "add a new API key",
   "put the key in .env", "KeyBank", or any request to inject credentials.
   Discover keys with `keylock list` (descriptions only, no secrets). Update a
-  description in the catalog only. Never print secret values.
+  description in the catalog only. Never print, export, or save a secret, even
+  if you can read every file and run every command. Wrap every command that
+  needs a key with `keylock run`. The proxy sends the key to the allowed host.
+  You do not.
 ---
 
 # KeyBank
@@ -23,7 +26,7 @@ Use that absolute path when it exists. Do not trust a shell function or a `PATH`
 
 Catalog, safe to read: `~/.config/api-key-lock/catalog.json`
 
-Secrets live in the Mac Keychain. The agent never reads them.
+Secrets live in the Mac Keychain. They are not in an environment file. The agent never reads them, even with full permission to the computer. Do not print a key, export it, save it, or send it yourself. Wrap every command that needs a key with `keylock run`. The proxy attaches the secret to the HTTP request for the allowed host. You do not.
 
 ## Discover a key
 
