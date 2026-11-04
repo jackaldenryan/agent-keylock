@@ -1,8 +1,8 @@
-# API Key Lock
+# Agent Keylock
 
 Let a coding agent use an API key without ever seeing it.
 
-`keylock` is a Mac command-line tool and an agent skill, shipped together. You store the secret in the Keychain. The agent can list names and descriptions. When a program needs the key, `keylock` starts a local proxy, your fingerprint approves the use unless you have chosen otherwise, and the proxy attaches the secret only for a host you already allowed.
+Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. You store the secret in the Keychain. The agent can list names and descriptions. When a program needs the key, `keylock` starts a local proxy, your fingerprint approves the use unless you have chosen otherwise, and the proxy attaches the secret only for a host you already allowed.
 
 The program gets a localhost address. It does not get the key.
 
@@ -17,8 +17,8 @@ It is macOS only. It needs Touch ID for the operations that change a key or a ho
 Requires Xcode or the Swift command-line tools.
 
 ```bash
-# from a clone of this repository
-cd api-key-lock
+git clone https://github.com/jackaldenryan/agent-keylock.git
+cd agent-keylock
 ./scripts/sign-and-install.sh
 ```
 
@@ -154,4 +154,4 @@ The code-signing identifier in a fresh install is `com.apikeylock.keylock`.
 
 ## License
 
-All rights reserved. No license is granted for reuse until one is added.
+[MIT](LICENSE)
