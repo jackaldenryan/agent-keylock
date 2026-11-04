@@ -32,4 +32,6 @@ The signing key for `keylock` is kept in a separate keychain, not the login keyc
 
 `run` can be told to skip Touch ID. That choice cannot be a file, and it cannot be a Keychain item. A same-user agent can write a file. It can also create a Keychain item whose trusted-app list names this binary, including with `security add-generic-password -A`. `keylock` would then read `never` and skip the prompt.
 
-The shipped setting lives only in a helper process started by `keylock auth` after Touch ID. `run` accepts it only when that helper's code directory hash matches this binary. If the helper is missing, or the peer does not match, `run` asks every time. The setting does not survive logout or restart.
+Creating the item first does not fix that. A second program, on this Mac, could not read a test item and could not delete it. Both of those were blocked. It could change the item's value, and that call did not raise a dialog. So an agent does not have to win a race at install time. It can rewrite a setting that is already there.
+
+The shipped setting therefore lives only in a helper process started by `keylock auth` after Touch ID. `run` accepts it only when that helper's code directory hash matches this binary. If the helper is missing, or the peer does not match, `run` asks every time. The setting does not survive logout or restart. Keys and allowed hosts do. They stay in the Keychain. After a reboot, run `keylock auth` once and approve Touch ID. No signing key is required for that.

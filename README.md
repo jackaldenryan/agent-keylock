@@ -116,7 +116,9 @@ A request straight to `https://api.openai.com` has no key and will fail. That is
 
 `30m` and `1h` work the same way. Changing this setting requires Touch ID. The value is not a file and not a Keychain item. An agent can write both of those. It is held in memory by a helper that `run` accepts only when that helper is this signed binary. If the helper is not running, `run` asks every time.
 
-The setting lasts until you log out, restart, or the helper exits. It does not survive a reboot. Set it again after you log in.
+The setting lasts until you log out, restart, or the helper exits. It does not survive a reboot. That is intentional. A Keychain item can be rewritten by another program without a dialog, so the setting is not stored there.
+
+After a reboot, your keys and allowed hosts are still there. Run `keylock auth` once, in your own Terminal, and approve Touch ID. You do not plug in a signing key to do that. If you leave the default alone, a reboot changes nothing: `run` already asks every time.
 
 `never` and a long window mean an agent can spend the key at an approved host while you are away. Put a spending cap on the key at the provider. The proxy still will not reveal the key or send it to a host you have not allowed.
 
