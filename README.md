@@ -74,7 +74,7 @@ Type the secret when asked. The terminal does not echo it. Keep the secret out o
 Ask your agent:
 
 ```text
-List the available OpenAI models.
+List the available OpenAI models using my OpenAI API key.
 ```
 
 The reply is a model list. The key is absent from that reply.
