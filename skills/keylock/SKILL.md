@@ -29,7 +29,7 @@ Catalog, safe to read: `~/.config/api-key-lock/catalog.json`
 
 ## Run a program
 
-Ask the user before running. If `keylock auth` is `always`, or the window has expired, they approve a Touch ID dialog. The dialog is the approval. If the setting is `never`, or a window is still open, `run` does not ask. Do not wait for a prompt that will not appear.
+If `keylock auth` is `always`, or the window has expired, `run` shows a Touch ID dialog. If the setting is `never`, or a window is still open, `run` does not show a dialog. Do not wait for a prompt that will not appear.
 
 ```bash
 /opt/homebrew/bin/keylock run <id> -- <command>
