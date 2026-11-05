@@ -1,10 +1,10 @@
 # Agent Keylock
 
-Describe each API key once. Your agent sees those descriptions, picks the one you name, and uses it. You never create an environment file. The agent cannot read the secret.
+You describe each API key once. The agent reads those descriptions, selects the key you name, and calls the API. You do not create an environment file. The agent cannot read the secret.
 
-That is the point of Agent Keylock. You stop keeping keys in files and pasting them into chat. The agent chooses from the descriptions you wrote. A local proxy attaches the secret, and only to an HTTP request for the one host you allowed. The key cannot be printed. It cannot be saved. It cannot be sent anywhere else, including a host an agent was told to use, such as evil.com. The agent never receives the secret, so it has nothing to copy.
+A local proxy attaches the secret to an HTTP request for the one host you allowed. A printed environment, a saved file, or a request to another host such as evil.com contains no key, because the agent never receives the secret.
 
-Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. It is macOS only.
+`keylock` is a Mac command and an agent skill. It runs on macOS.
 
 ## What it does
 
@@ -12,8 +12,8 @@ Agent Keylock is a Mac command-line tool and an agent skill, shipped together. T
 | --- | :---: |
 | You describe each key once. The agent sees those descriptions, picks the one you name, and never sees the secret | ✅ |
 | You do not create or maintain an environment file | ✅ |
-| The installed skill tells the agent how to run, so it does not ask you to paste a key into chat | ✅ |
-| Stores each key in the encrypted macOS Keychain, not in a file | ✅ |
+| The installed skill tells the agent how to run, so the agent does not ask you to paste a key into chat | ✅ |
+| The secret is stored in the encrypted macOS Keychain | ✅ |
 | Malware that searches the disk for environment files and pasted API keys does not find the secret | ✅ |
 | A prompt-injected agent that reads files, the environment, or the catalog does not find the secret | ✅ |
 | A prompt-injected agent cannot print the key, save it, or attach it to a request | ✅ |
@@ -23,29 +23,21 @@ Agent Keylock is a Mac command-line tool and an agent skill, shipped together. T
 | Adding a key or allowing a host always requires Touch ID | ✅ |
 | The release is signed with a Developer ID certificate and notarized by Apple | ✅ |
 
-## What an agent can and cannot do
+## Agent access
 
-A coding agent with full permission can read your files, run your commands, and write programs. That is the case this tool is built for. Full permission does not put the key in those files, in that command, or in a program the agent writes.
+A coding agent with full permission can read your files, run your commands, and write programs. The key is absent from those files, from that command, and from a program the agent writes.
 
-The agent may cause an approved key to be spent at one approved host. It may not:
+The agent can cause an approved key to be sent to one approved host. The agent has no copy it can print, export, write to a file, place in an environment variable, or send to any other host.
 
-- print the key
-- export it
-- write it to a file, a log, or a chat
-- put it in an environment variable
-- send it to any host other than the one you allowed
+## Key storage
 
-Those are not rules the agent is trusted to obey. The key is never handed over, so there is nothing for the agent to copy.
+The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. `keylock run` leaves the secret out of the command and does not write it to disk.
 
-## Where the key is stored
-
-The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. It is not stored in an environment file, a `.env` file, the catalog, or the command the agent runs. `keylock run` does not write the secret to disk.
-
-The file the agent may read, `~/.config/api-key-lock/catalog.json`, has names, descriptions, and hosts. It does not have secrets.
+The agent can read `~/.config/api-key-lock/catalog.json`. That file has names, descriptions, and hosts.
 
 Adding a key, allowing a host, and changing how often `run` asks all require Touch ID.
 
-## How the agent is told to run a command
+## Command wrapper
 
 The skill tells the agent to wrap every command that needs a key:
 
@@ -53,21 +45,21 @@ The skill tells the agent to wrap every command that needs a key:
 /opt/homebrew/bin/keylock run openai-personal -- <command>
 ```
 
-That wrapper does not save the secret, and it does not inject the secret into the command. It removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. It starts a proxy on `127.0.0.1` and points the command at that proxy. The proxy adds the key to the outbound HTTP request, and only for the host stored for that key. When the command exits, the proxy exits.
+The wrapper removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. It starts a proxy on `127.0.0.1` and points the command at that proxy. The proxy adds the key to the outbound HTTP request for the host stored with that key. The proxy exits when the command exits.
 
-A request straight to `https://api.openai.com` has no key. If `OPENAI_API_KEY` is empty, that is correct. The program got a localhost address. It did not get the key.
+A request straight to `https://api.openai.com` has no key. An empty `OPENAI_API_KEY` is the expected result. The program receives a localhost address.
 
-This is the design. It is not a claim that a Keychain Allow dialog can be ignored, or that a signing key left on the Mac is safe. Those limits are below.
+A Keychain Allow dialog and a signing key left on the Mac are separate limits. Those limits are described below.
 
 ## Quickstart
 
-One command. It installs `keylock` and the agent skill. The binary is signed with a Developer ID certificate and notarized by Apple. Notarization means Apple checked the signature and scanned the file. It does not mean Apple reviewed or endorsed the program.
+Homebrew installs `keylock` and the agent skill in one command. The binary is signed with a Developer ID certificate and notarized by Apple. Notarization means Apple checked the signature and scanned the file. Apple did not review or endorse the program.
 
 ```bash
 brew install --cask jackaldenryan/tap/agent-keylock
 ```
 
-Add a key once, in your own Terminal. Touch ID is the approval. Cancel if the host in the dialog is not the host you typed.
+Add a key once, in your own Terminal. Touch ID is the approval. Cancel if the host in the dialog differs from the host you typed.
 
 ```bash
 keylock allow-host api.openai.com
@@ -77,25 +69,25 @@ keylock add openai-personal \
   --maps-to OPENAI_API_KEY
 ```
 
-Type the secret when asked. It is not echoed. Do not paste it into chat.
+Type the secret when asked. The terminal does not echo it. Keep the secret out of chat.
 
-Then ask your agent:
+Ask your agent:
 
 ```text
 List my keys. Use my personal OpenAI key to list the available models. Do not print the key, and do not create an environment file.
 ```
 
-You should get a model list. The key should not appear. The agent should not ask you to paste one.
+The reply is a model list. The key is absent from that reply, and the agent has no reason to ask you to paste one.
 
-## How a program calls the API
+## Program calls
 
-`keylock run` does not put the secret in the environment. It removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. The program calls a localhost base URL. The proxy adds the real key.
+`keylock run` leaves the secret out of the environment. It removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. The program calls a localhost base URL. The proxy adds the key.
 
 | Host | Variable the program reads |
 | --- | --- |
 | `api.openai.com` | `OPENAI_BASE_URL` (already ends in `/v1`) |
 | `api.x.ai` | `XAI_BASE_URL` and `OPENAI_BASE_URL` |
-| `api.anthropic.com` | `ANTHROPIC_BASE_URL` (the proxy sends `x-api-key`, not a bearer token) |
+| `api.anthropic.com` | `ANTHROPIC_BASE_URL` (the proxy sends `x-api-key`) |
 | any other allowed host | `KEYLOCK_BASE_URL` |
 
 ```python
@@ -104,17 +96,17 @@ base = os.environ["OPENAI_BASE_URL"].rstrip("/")
 urllib.request.urlopen(base + "/models", timeout=30)
 ```
 
-A request straight to `https://api.openai.com` has no key and will fail. That is the point.
+A request straight to `https://api.openai.com` has no key and fails.
 
-## What to expect
+## Command behavior
 
-- `list` and `show` print ids, descriptions, and hosts. No fingerprint, no secrets.
-- `allow-host` and `add` always ask for Touch ID.
-- `run` asks according to the auth setting. The default is every time.
+- `list` and `show` print ids, descriptions, and hosts. They skip Touch ID and omit secrets.
+- `allow-host` and `add` ask for Touch ID on every call.
+- `run` follows the auth setting. The default is every time.
 - A lookalike host, a URL, or punycode is rejected before any dialog.
-- If macOS shows a Keychain Allow dialog for a program that is not `keylock`, click Deny. Do not click Always Allow.
+- If macOS shows a Keychain Allow dialog for a program other than `keylock`, click Deny. Clicking Always Allow lets that program read the item later with no prompt.
 
-## How often run asks
+## Auth setting
 
 ```bash
 keylock auth
@@ -124,31 +116,29 @@ keylock auth 3h
 keylock auth 1d
 ```
 
-`30m` and `1h` work the same way. Changing this setting requires Touch ID. The value is not a file and not a Keychain item. An agent can write both of those. It is held in memory by a helper that `run` accepts only when that helper is this signed binary. If the helper is not running, `run` asks every time.
+`30m` and `1h` work the same way. Changing this setting requires Touch ID. The value is held in memory by a helper that `run` accepts only when that helper is this signed binary. A file or a Keychain item can be rewritten by another program, so the setting is stored in neither place. If the helper is missing, `run` asks every time.
 
-The setting lasts until you log out, restart, or the helper exits. It does not survive a reboot. That is intentional. A Keychain item can be rewritten by another program without a dialog, so the setting is not stored there.
+The setting lasts until you log out, restart, or the helper exits. It ends at reboot. After a reboot, the keys and allowed hosts remain. Run `keylock auth` once, in your own Terminal, and approve Touch ID. A signing key is unnecessary for that step. With the default left unchanged, a reboot leaves `run` asking every time.
 
-After a reboot, your keys and allowed hosts are still there. Run `keylock auth` once, in your own Terminal, and approve Touch ID. You do not plug in a signing key to do that. If you leave the default alone, a reboot changes nothing: `run` already asks every time.
+`never` and a long window let an agent spend the key at an approved host while you are away. A spending cap at the provider limits that spend. The proxy withholds the key from the agent and from any host outside the allowlist.
 
-`never` and a long window mean an agent can spend the key at an approved host while you are away. Put a spending cap on the key at the provider. The proxy still will not reveal the key or send it to a host you have not allowed.
+## Request path
 
-## How it works
-
-1. You approve a hostname. That list is the only place the key may be sent.
-2. You add a secret. It goes into the login Keychain, trusted to the signed `keylock` binary.
-3. An agent reads the catalog at `~/.config/api-key-lock/catalog.json`. That file has names and descriptions, not secrets.
+1. You approve a hostname. The proxy sends the key only to names on that list.
+2. You add a secret. The secret goes into the login Keychain, trusted to the signed `keylock` binary.
+3. An agent reads the catalog at `~/.config/api-key-lock/catalog.json`. That file has names and descriptions.
 4. `keylock run` starts a proxy on `127.0.0.1` and points the program at it.
-5. The proxy adds the key and forwards only to the host stored for that key. It does not follow redirects. It does not honor `HTTPS_PROXY`. If a response contains the key, the proxy does not return that body.
+5. The proxy adds the key and forwards to the host stored for that key. The proxy skips redirects and ignores `HTTPS_PROXY`. If a response contains the key, the proxy withholds that body.
 
-While a run is in progress, another local program can also send requests through that proxy. It can spend the key. It cannot read it. The proxy exits when the command exits.
+While a run is in progress, another local program can send requests through that proxy. The other program can spend the key. The other program cannot read the key. The proxy exits when the command exits.
 
 ## Limits
 
-This is not a promise that no program on the Mac can ever raise a prompt.
+A Keychain Allow dialog can still appear for another program.
 
-A free self-signed command-line tool cannot make a Keychain item require Touch ID by itself, and it cannot make every other program fail with no dialog. Another program can still raise a Keychain Allow dialog. That dialog is not Touch ID. If something can click Allow for you, it can get past that dialog. Details are in [PLATFORM.md](PLATFORM.md).
+A self-signed command-line tool cannot make the Keychain item itself require Touch ID, and it cannot make every other program fail with no dialog. The Allow dialog is a password prompt, separate from Touch ID. A program that can click Allow can pass that dialog. Details are in [PLATFORM.md](PLATFORM.md).
 
-Touch ID inside `keylock` is still required for adding a key, allowing a host, and changing the auth setting. A cancelled prompt means the tool does not touch the secret.
+Touch ID inside `keylock` remains in force for adding a key, allowing a host, and changing the auth setting. A cancelled prompt stops the tool before it touches the secret.
 
 The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](REDTEAM.md).
 
@@ -158,11 +148,11 @@ The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](RED
 swift test
 ```
 
-A source build does not install the agent skill. Run `keylock install-skill` after `./scripts/sign-and-install.sh` if you are not using Homebrew.
+A Homebrew install copies the agent skill. A source build leaves that step to you: run `keylock install-skill` after `./scripts/sign-and-install.sh`.
 
-`./scripts/sign-and-install.sh` builds a local copy and signs it with a certificate created on this Mac. That certificate is not the public release. After a local rebuild, move the signing key off the Mac again. It is created under `~/Library/Application Support/APIKeyLock/signing` and `~/Library/Keychains/api-key-lock-signing-db`. An agent that can read those files can sign a fake `keylock`.
+`./scripts/sign-and-install.sh` builds a local copy and signs it with a certificate created on this Mac. The public release uses a different certificate. After a local rebuild, move the signing key off the Mac. The local signing files are under `~/Library/Application Support/APIKeyLock/signing` and `~/Library/Keychains/api-key-lock-signing-db`. An agent that can read those files can sign a fake `keylock`.
 
-The public release is signed with a Developer ID certificate and published by `./scripts/release-macos.sh`. Run that only in a Terminal you control.
+The public release is signed with a Developer ID certificate and published by `./scripts/release-macos.sh`. Run that script in a Terminal you control.
 
 The code-signing identifier is `com.apikeylock.keylock`.
 
