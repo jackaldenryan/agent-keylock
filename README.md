@@ -22,7 +22,7 @@ Each row is something the tool does.
 | A prompt-injected agent cannot send the key to a host you did not allow, including one it was told to use | ✅ |
 | The only use of a key is an HTTP request to the one host you already allowed | ✅ |
 | Touch ID can be required for every use of a key. That is the default | ✅ |
-| Adding a key or allowing a host always requires Touch ID | ✅ |
+| You approve Touch ID every time you add a key or allow a host | ✅ |
 | The release is signed with a Developer ID certificate and notarized by Apple | ✅ |
 
 ## Quickstart
@@ -73,7 +73,7 @@ The setting ends when you log out, restart, or the helper process exits. The hel
 
 If you set `keylock auth` to `never`, or to a window such as `3h`, an agent can spend the key at an approved host while you are away. A spending cap at the provider limits that spend.
 
-## Calling an API from a program
+## API calls from a program
 
 `keylock run` leaves the secret out of the environment. The program calls the localhost base URL that this command sets. A request straight to `https://api.openai.com` has no key and fails.
 
@@ -104,7 +104,7 @@ The secret is stored in the macOS login Keychain. macOS encrypts Keychain items.
 
 The setting for how often `keylock run` asks for Touch ID stays in the memory of a helper process. `keylock run` accepts that helper only when the helper is this signed binary. Another program can rewrite a file or a Keychain item. If the helper is missing, `keylock run` asks every time.
 
-A Keychain Allow dialog can still appear for another program. That dialog is separate from Touch ID. If macOS shows it for a program other than `keylock`, click Deny. Clicking Always Allow lets that program read the item later with no prompt. A cancelled Touch ID prompt stops `keylock` before it touches the secret.
+A Keychain Allow dialog can still appear for another program. That dialog is separate from Touch ID. If macOS shows it for a program other than `keylock`, click Deny. Always Allow lets that program read the item later with no prompt. A cancelled Touch ID prompt stops `keylock` before it touches the secret.
 
 While `keylock run` is in progress, another local program can send requests through the localhost proxy that the command started. That program can spend the key at the approved host. It cannot read the key. The proxy exits when the command exits. The proxy skips redirects and ignores `HTTPS_PROXY`. If a response contains the key, the proxy withholds that body.
 
