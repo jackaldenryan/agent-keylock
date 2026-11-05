@@ -67,7 +67,9 @@ keylock auth 3h
 keylock auth 1d
 ```
 
-`30m` and `1h` work the same way. Changing how often `keylock run` asks requires Touch ID. That setting ends when you log out, restart, or the helper process exits. The helper is a small process that remembers the setting in memory. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
+`30m` means 30 minutes. `1h` means one hour. `3h` means three hours. `1d` means one day. The same pattern works for other lengths, up to 30 days. You approve Touch ID before this setting changes. After that approval, `keylock run` skips Touch ID until the window ends. The next run asks again, and a successful approval starts another window of the same length.
+
+The setting ends when you log out, restart, or the helper process exits. The helper is a small process that remembers the setting in memory. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
 
 If you set `keylock auth` to `never`, or to a window such as `3h`, an agent can spend the key at an approved host while you are away. A spending cap at the provider limits that spend.
 
