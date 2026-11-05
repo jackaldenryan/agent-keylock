@@ -51,6 +51,10 @@ struct Keylock {
             try AuthHold.serve()
         case "doctor":
             try doctor()
+        case "install-skill":
+            try installSkill()
+        case "uninstall-skill":
+            try uninstallSkill()
         case "help", "-h", "--help":
             print(usage)
         default:
@@ -68,6 +72,7 @@ struct Keylock {
       keylock run <id> -- <command> [args...]
       keylock auth [always|never|30m|1h|3h|1d]
       keylock doctor
+      keylock install-skill
 
     The secret is never an argument. add reads it from /dev/tty after Touch ID.
     keylock auth changes how often run asks for Touch ID. Changing it requires Touch ID.
@@ -264,6 +269,70 @@ struct Keylock {
         try Fingerprint.require(reason: reason)
         try AuthHold.replace(next)
         print(AuthPolicy.describe(AuthHold.current()))
+    }
+
+    static func installSkill() throws {
+        let source = try skillSource()
+        for destination in skillDestinations(createShared: true) {
+            try FileManager.default.createDirectory(
+                at: destination.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: source, to: destination)
+            print("installed \(destination.path)")
+        }
+    }
+
+    static func uninstallSkill() throws {
+        for destination in skillDestinations(createShared: false) {
+            let marker = destination.appendingPathComponent("SKILL.md")
+            guard FileManager.default.fileExists(atPath: marker.path) else { continue }
+            let text = try String(contentsOf: marker, encoding: .utf8)
+            guard text.contains("name: keybank") else { continue }
+            try FileManager.default.removeItem(at: destination)
+            print("removed \(destination.path)")
+        }
+    }
+
+    static func skillSource() throws -> URL {
+        let executable = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
+        var directory = executable.deletingLastPathComponent()
+        for _ in 0..<8 {
+            let marker = directory.appendingPathComponent("skills/keybank/SKILL.md")
+            if FileManager.default.fileExists(atPath: marker.path) {
+                return marker.deletingLastPathComponent()
+            }
+            let parent = directory.deletingLastPathComponent()
+            if parent.path == directory.path { break }
+            directory = parent
+        }
+        throw CLIError.message("Could not find skills/keybank next to this keylock binary.")
+    }
+
+    static func skillDestinations(createShared: Bool) -> [URL] {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let shared = home.appendingPathComponent(".agents/skills")
+        var roots = createShared ? [shared] : (FileManager.default.fileExists(atPath: shared.path) ? [shared] : [])
+        let optional = [
+            ".config/opencode/skills",
+            ".claude/skills",
+            ".cursor/skills",
+            ".codex/skills",
+            ".gemini/skills",
+            ".grok/skills",
+            ".factory/skills",
+            ".config/amp/skills",
+        ]
+        for relative in optional {
+            let root = home.appendingPathComponent(relative)
+            if FileManager.default.fileExists(atPath: root.path) {
+                roots.append(root)
+            }
+        }
+        return roots.map { $0.appendingPathComponent("keybank") }
     }
 
     static func doctor() throws {

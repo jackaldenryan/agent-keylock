@@ -16,13 +16,7 @@ description: >
 
 KeyBank is the catalog of API keys for the `keylock` tool. It holds ids, descriptions, aliases, and the host each key may be sent to. It does not hold secrets.
 
-The command is `keylock`. After the normal install it is:
-
-```
-~/.local/libexec/api-key-lock/keylock
-```
-
-Use that absolute path when it exists. Do not trust a shell function or a `PATH` entry named `keylock` for adding a secret.
+The command is `keylock`. After the normal install it is `/opt/homebrew/bin/keylock`. A source build may instead be `~/.local/libexec/api-key-lock/keylock`. Use the absolute path that exists. Do not trust a shell function or another `PATH` entry named `keylock` for adding a secret. Before `add` or `run`, confirm the signature with `codesign --verify --strict`. Authority must be `Developer ID Application` or `API Key Lock Signing`. If it is anything else, stop.
 
 Catalog, safe to read: `~/.config/api-key-lock/catalog.json`
 
@@ -31,8 +25,8 @@ Secrets live in the Mac Keychain. They are not in an environment file. The agent
 ## Discover a key
 
 ```bash
-~/.local/libexec/api-key-lock/keylock list
-~/.local/libexec/api-key-lock/keylock show <id>
+/opt/homebrew/bin/keylock list
+/opt/homebrew/bin/keylock show <id>
 ```
 
 Match the user's words to `id`, alias, or description. If they ask what keys exist, run `list` and show every id, description, and host. If several fit, show the list and ask. Do not guess.
@@ -53,7 +47,7 @@ Match the user's words to `id`, alias, or description. If they ask what keys exi
 Call `$OPENAI_BASE_URL/models`, not `$OPENAI_API_KEY`, and not `https://api.openai.com` directly. A direct call has no key and will fail. If `OPENAI_API_KEY` is missing, that is correct.
 
 ```bash
-~/.local/libexec/api-key-lock/keylock run openai-personal -- /bin/sh -c '/usr/bin/curl -sS "$OPENAI_BASE_URL/models"'
+/opt/homebrew/bin/keylock run openai-personal -- /bin/sh -c '/usr/bin/curl -sS "$OPENAI_BASE_URL/models"'
 ```
 
 ```python
@@ -69,11 +63,11 @@ Do not print `os.environ`. Do not look for a key in it.
 `add` and `allow-host` always require Touch ID. `run` follows a setting. The default is `always`.
 
 ```bash
-~/.local/libexec/api-key-lock/keylock auth
-~/.local/libexec/api-key-lock/keylock auth always
-~/.local/libexec/api-key-lock/keylock auth never
-~/.local/libexec/api-key-lock/keylock auth 3h
-~/.local/libexec/api-key-lock/keylock auth 1d
+/opt/homebrew/bin/keylock auth
+/opt/homebrew/bin/keylock auth always
+/opt/homebrew/bin/keylock auth never
+/opt/homebrew/bin/keylock auth 3h
+/opt/homebrew/bin/keylock auth 1d
 ```
 
 Changing the setting requires Touch ID. Do not edit a file or a Keychain item to change it. Another program can rewrite a Keychain item's value without a dialog, so the setting is not stored there. It is held in memory by the signed binary. It lasts until logout or restart. Keys and allowed hosts survive a reboot. The auth setting does not. If `keylock auth` prints `always` after a reboot, that is expected. Tell the user to run `keylock auth` once in their own Terminal. Do not invent a second session protocol.
@@ -85,7 +79,7 @@ Changing the setting requires Touch ID. Do not edit a file or a Keychain item to
 Ask the user before running. If `keylock auth` is `always`, or the window has expired, they must approve a Touch ID dialog. The dialog is the approval, not your message. If the setting is `never`, or a window is still open, `run` does not ask. Do not wait for a prompt that will not appear.
 
 ```bash
-~/.local/libexec/api-key-lock/keylock run <id> -- <command>
+/opt/homebrew/bin/keylock run <id> -- <command>
 ```
 
 Do not pass a secret as an argument. While that command is running, other local programs can also send requests through the proxy. They can spend the key at the already approved host. They cannot read the key.
@@ -103,13 +97,13 @@ The user types the secret in their own Terminal, after Touch ID. Never ask them 
 If the host is not already allowed, they run this first, in their own Terminal:
 
 ```bash
-~/.local/libexec/api-key-lock/keylock allow-host api.example.com
+/opt/homebrew/bin/keylock allow-host api.example.com
 ```
 
 Then:
 
 ```bash
-~/.local/libexec/api-key-lock/keylock add some-id --host api.example.com --description "when to use this key" --maps-to SOME_API_KEY
+/opt/homebrew/bin/keylock add some-id --host api.example.com --description "when to use this key" --maps-to SOME_API_KEY
 ```
 
 Tell them the exact command. A new host must be plain ASCII, like `api.openai.com`. Do not invent a lookalike host. The tool rejects those before Touch ID. If a Keychain Allow dialog appears for any program other than the installed `keylock` path, they click Deny, not Always Allow.
