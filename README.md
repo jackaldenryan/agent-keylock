@@ -2,11 +2,11 @@
 
 You describe each API key once. The agent reads those descriptions, selects the key you name, and calls the API. You do not create an environment file. The agent cannot read the secret.
 
-A local proxy attaches the secret only to an HTTP request for the host you allowed. A printed environment, a saved file, or a request to another host such as evil.com contains no key.
+A local proxy attaches the secret only to an HTTP request for the host you allowed. A request to another host, such as evil.com, goes out without the key.
 
 `keylock` is a Mac command and an agent skill.
 
-## What it does
+## What keylock does
 
 Each row is something the tool does.
 
@@ -14,7 +14,7 @@ Each row is something the tool does.
 | --- | :---: |
 | You describe each key once. The agent sees those descriptions, picks the one you name, and never sees the secret | ✅ |
 | You do not create or maintain an environment file | ✅ |
-| The installed skill tells the agent how to run, so the agent does not ask you to paste a key into chat | ✅ |
+| The installed skill tells the agent which command to run | ✅ |
 | The secret is stored in the encrypted macOS Keychain | ✅ |
 | Malware that searches the disk for environment files and pasted API keys does not find the secret | ✅ |
 | A prompt-injected agent that reads files, the environment, or the catalog does not find the secret | ✅ |
@@ -27,7 +27,7 @@ Each row is something the tool does.
 
 ## Quickstart
 
-You need to install the tool, add one key, and ask your agent to use it.
+The install has three steps: install the command, add one key, and ask your agent to use it.
 
 1. Install `keylock` and the agent skill.
 
@@ -55,7 +55,7 @@ List the available OpenAI models using my OpenAI API key.
 
 The reply is a model list. The key is absent from that reply.
 
-## Touch ID
+## How often Touch ID asks
 
 `keylock run` is the command that uses a stored key. It asks for Touch ID every time unless you change that setting. `keylock add` and `keylock allow-host` always ask.
 
@@ -67,19 +67,19 @@ keylock auth 3h
 keylock auth 1d
 ```
 
-`30m` and `1h` work the same way. Changing how often `keylock run` asks requires Touch ID. That setting ends when you log out, restart, or the in-memory helper exits. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
+`30m` and `1h` work the same way. Changing how often `keylock run` asks requires Touch ID. That setting ends when you log out, restart, or the helper process exits. The helper is a small process that remembers the setting in memory. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
 
-`never` and a long window let an agent spend the key at an approved host while you are away. A spending cap at the provider limits that spend.
+If you set `keylock auth` to `never`, or to a window such as `3h`, an agent can spend the key at an approved host while you are away. A spending cap at the provider limits that spend.
 
-## Calling an API
+## Calling an API from a program
 
-`keylock run` leaves the secret out of the environment. The program calls the localhost base URL that `run` sets. A request straight to `https://api.openai.com` has no key and fails.
+`keylock run` leaves the secret out of the environment. The program calls the localhost base URL that this command sets. A request straight to `https://api.openai.com` has no key and fails.
 
 | Host | Base URL variable |
 | --- | --- |
 | `api.openai.com` | `OPENAI_BASE_URL` (already ends in `/v1`) |
 | `api.x.ai` | `XAI_BASE_URL` and `OPENAI_BASE_URL` |
-| `api.anthropic.com` | `ANTHROPIC_BASE_URL` (the proxy sends `x-api-key`) |
+| `api.anthropic.com` | `ANTHROPIC_BASE_URL` (`keylock` sends `x-api-key`) |
 | any other allowed host | `KEYLOCK_BASE_URL` |
 
 ```bash
@@ -92,21 +92,21 @@ base = os.environ["OPENAI_BASE_URL"].rstrip("/")
 urllib.request.urlopen(base + "/models", timeout=30)
 ```
 
-`list` and `show` print ids, descriptions, and hosts. They omit secrets. A lookalike host, a URL, or punycode is rejected before any dialog. `stream: true` is not supported. A streaming client can time out.
+`keylock list` and `keylock show` print ids, descriptions, and hosts. They omit secrets. `keylock` rejects a lookalike host, a URL, or punycode before it shows a dialog. Punycode is an international domain written with ASCII, such as `xn--`. `stream: true` is not supported. A streaming client can time out.
 
-## Security
+## Signature and limits
 
 The public binary is signed with a Developer ID certificate and notarized by Apple. Notarization means Apple checked the signature and scanned the file. Apple did not review or endorse the program.
 
-The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. The catalog at `~/.config/api-key-lock/catalog.json` has names, descriptions, and hosts. `keylock run` does not write the secret to disk.
+The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. The catalog at `~/.config/api-key-lock/catalog.json` has names, descriptions, and hosts. `keylock run`, the command that uses a stored key, does not write the secret to disk.
 
-The setting for how often `keylock run` asks for Touch ID is held in memory by a helper process. `keylock run` accepts that helper only when the helper is this signed binary. A file or a Keychain item can be rewritten by another program, so the setting is stored in neither place. If the helper is missing, `keylock run` asks every time.
+The setting for how often `keylock run` asks for Touch ID stays in the memory of a helper process. `keylock run` accepts that helper only when the helper is this signed binary. Another program can rewrite a file or a Keychain item. If the helper is missing, `keylock run` asks every time.
 
 A Keychain Allow dialog can still appear for another program. That dialog is separate from Touch ID. If macOS shows it for a program other than `keylock`, click Deny. Clicking Always Allow lets that program read the item later with no prompt. A cancelled Touch ID prompt stops `keylock` before it touches the secret.
 
 While `keylock run` is in progress, another local program can send requests through the localhost proxy that the command started. That program can spend the key at the approved host. It cannot read the key. The proxy exits when the command exits. The proxy skips redirects and ignores `HTTPS_PROXY`. If a response contains the key, the proxy withholds that body.
 
-A self-signed command-line tool cannot make the Keychain item itself require Touch ID. Details are in [PLATFORM.md](PLATFORM.md). The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](REDTEAM.md).
+A copy you build and sign yourself cannot make the Keychain item require Touch ID. Details are in [PLATFORM.md](PLATFORM.md). The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](REDTEAM.md).
 
 ## Development
 
@@ -114,9 +114,9 @@ A self-signed command-line tool cannot make the Keychain item itself require Tou
 swift test
 ```
 
-A Homebrew install copies the agent skill. After `./scripts/sign-and-install.sh`, run `keylock install-skill`.
+`brew install` copies the agent skill. A build from this repository does not. After `./scripts/sign-and-install.sh`, run `keylock install-skill`.
 
-`./scripts/sign-and-install.sh` signs a local copy with a certificate created on this Mac. The public release uses a Developer ID certificate and is published by `./scripts/release-macos.sh`. Run the release script in a Terminal you control. After a local rebuild, move the signing files off the Mac. They are under `~/Library/Application Support/APIKeyLock/signing` and `~/Library/Keychains/api-key-lock-signing-db`. An agent that can read those files can sign a fake `keylock`.
+`./scripts/sign-and-install.sh` signs that local copy with a certificate created on this Mac. The public release uses a Developer ID certificate and is published by `./scripts/release-macos.sh`. Run the release script in a Terminal you control. After a local rebuild, move the signing files off the Mac. They are under `~/Library/Application Support/APIKeyLock/signing` and `~/Library/Keychains/api-key-lock-signing-db`. An agent that can read those files can sign a fake `keylock`.
 
 The code-signing identifier is `com.apikeylock.keylock`.
 
