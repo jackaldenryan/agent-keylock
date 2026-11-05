@@ -57,7 +57,7 @@ The reply is a model list. The key is absent from that reply.
 
 ## Touch ID
 
-`run` asks every time unless you change that setting. `add` and `allow-host` always ask.
+`keylock run` is the command that uses a stored key. It asks for Touch ID every time unless you change that setting. `keylock add` and `keylock allow-host` always ask.
 
 ```bash
 keylock auth
@@ -67,7 +67,7 @@ keylock auth 3h
 keylock auth 1d
 ```
 
-`30m` and `1h` work the same way. Changing the setting requires Touch ID. The setting ends when you log out, restart, or the helper exits. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
+`30m` and `1h` work the same way. Changing how often `keylock run` asks requires Touch ID. That setting ends when you log out, restart, or the in-memory helper exits. Your keys and allowed hosts remain after a reboot. Run `keylock auth` once in your own Terminal and approve Touch ID.
 
 `never` and a long window let an agent spend the key at an approved host while you are away. A spending cap at the provider limits that spend.
 
@@ -100,11 +100,11 @@ The public binary is signed with a Developer ID certificate and notarized by App
 
 The secret is stored in the macOS login Keychain. macOS encrypts Keychain items. The catalog at `~/.config/api-key-lock/catalog.json` has names, descriptions, and hosts. `keylock run` does not write the secret to disk.
 
-The auth setting is held in memory by a helper that `run` accepts only when that helper is this signed binary. A file or a Keychain item can be rewritten by another program, so the setting is stored in neither place. If the helper is missing, `run` asks every time.
+The setting for how often `keylock run` asks for Touch ID is held in memory by a helper process. `keylock run` accepts that helper only when the helper is this signed binary. A file or a Keychain item can be rewritten by another program, so the setting is stored in neither place. If the helper is missing, `keylock run` asks every time.
 
 A Keychain Allow dialog can still appear for another program. That dialog is separate from Touch ID. If macOS shows it for a program other than `keylock`, click Deny. Clicking Always Allow lets that program read the item later with no prompt. A cancelled Touch ID prompt stops `keylock` before it touches the secret.
 
-While a run is in progress, another local program can send requests through the proxy. That program can spend the key at the approved host. It cannot read the key. The proxy exits when the command exits. The proxy skips redirects and ignores `HTTPS_PROXY`. If a response contains the key, the proxy withholds that body.
+While `keylock run` is in progress, another local program can send requests through the localhost proxy that the command started. That program can spend the key at the approved host. It cannot read the key. The proxy exits when the command exits. The proxy skips redirects and ignores `HTTPS_PROXY`. If a response contains the key, the proxy withholds that body.
 
 A self-signed command-line tool cannot make the Keychain item itself require Touch ID. Details are in [PLATFORM.md](PLATFORM.md). The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](REDTEAM.md).
 
