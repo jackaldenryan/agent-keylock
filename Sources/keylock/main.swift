@@ -278,11 +278,15 @@ struct Keylock {
                 at: destination.deletingLastPathComponent(),
                 withIntermediateDirectories: true
             )
-            if FileManager.default.fileExists(atPath: destination.path) {
-                try FileManager.default.removeItem(at: destination)
+            if isSymlink(destination) {
+                print("left existing link \(destination.path)")
+            } else {
+                if FileManager.default.fileExists(atPath: destination.path) {
+                    try FileManager.default.removeItem(at: destination)
+                }
+                try FileManager.default.copyItem(at: source, to: destination)
+                print("installed \(destination.path)")
             }
-            try FileManager.default.copyItem(at: source, to: destination)
-            print("installed \(destination.path)")
             let old = destination.deletingLastPathComponent().appendingPathComponent("keybank")
             let oldMarker = old.appendingPathComponent("SKILL.md")
             if FileManager.default.fileExists(atPath: oldMarker.path),
@@ -296,6 +300,10 @@ struct Keylock {
 
     static func uninstallSkill() throws {
         for destination in skillDestinations(createShared: false) {
+            if isSymlink(destination) {
+                print("left existing link \(destination.path)")
+                continue
+            }
             let marker = destination.appendingPathComponent("SKILL.md")
             guard FileManager.default.fileExists(atPath: marker.path) else { continue }
             let text = try String(contentsOf: marker, encoding: .utf8)
@@ -303,6 +311,10 @@ struct Keylock {
             try FileManager.default.removeItem(at: destination)
             print("removed \(destination.path)")
         }
+    }
+
+    static func isSymlink(_ url: URL) -> Bool {
+        (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink) == true
     }
 
     static func skillSource() throws -> URL {
