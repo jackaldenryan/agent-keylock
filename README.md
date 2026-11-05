@@ -44,7 +44,7 @@ This is the design. It is not a claim that a Keychain Allow dialog can be ignore
 
 ## Quickstart
 
-Requires Homebrew. This installs a signed binary and the agent skill. You do not clone the repository, and you do not create a signing certificate.
+Requires Homebrew. This installs a binary signed with a Developer ID certificate and notarized by Apple, plus the agent skill. You do not clone the repository, and you do not create a signing certificate. Notarization means Apple checked the signature and scanned the file. It does not mean Apple reviewed or endorsed the program.
 
 ```bash
 brew install --cask jackaldenryan/tap/agent-keylock
