@@ -1,8 +1,8 @@
 # Agent Keylock
 
-Make it as hard as possible for a coding agent to read or exfiltrate an API key, even if that agent has full permission to your computer.
+Describe each API key once. Your agent sees those descriptions, picks the one you name, and uses it. You never create an environment file. The agent cannot read the secret.
 
-An agent can use a key. It cannot print it, export it, save it, or send it anywhere except the host you already allowed. The only use of the secret is an HTTP request to that host. The agent does not attach the secret. A local proxy does.
+That is the point of Agent Keylock. You stop keeping keys in files and pasting them into chat. The agent chooses from the descriptions you wrote. A local proxy attaches the secret to an HTTP request for the one host you allowed. The agent does not receive the key, so it cannot print it, save it, or send it somewhere else.
 
 Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. It is macOS only.
 
@@ -10,6 +10,9 @@ Agent Keylock is a Mac command-line tool and an agent skill, shipped together. T
 
 | | |
 | --- | :---: |
+| You describe each key once. The agent sees those descriptions, picks the one you name, and never sees the secret | ✅ |
+| You do not create or maintain an environment file | ✅ |
+| The installed skill tells the agent how to run, so it does not ask you to paste a key into chat | ✅ |
 | Stores each key in the encrypted macOS Keychain, not in a file | ✅ |
 | A search of the disk for `.env` files or pasted API keys does not find the secret | ✅ |
 | A prompt-injected agent that reads files, the environment, or the catalog does not find the secret | ✅ |
@@ -18,9 +21,6 @@ Agent Keylock is a Mac command-line tool and an agent skill, shipped together. T
 | The only use of a key is an HTTP request to the one host you already allowed | ✅ |
 | Touch ID can be required for every use of a key. That is the default | ✅ |
 | Adding a key or allowing a host always requires Touch ID | ✅ |
-| You do not create or maintain an environment file | ✅ |
-| You describe each key once. The agent sees those descriptions, picks the one you name, and never sees the secret | ✅ |
-| The installed skill tells the agent how to run, so it does not ask you to paste a key into chat | ✅ |
 | The release is signed with a Developer ID certificate and notarized by Apple | ✅ |
 
 ## What an agent can and cannot do
