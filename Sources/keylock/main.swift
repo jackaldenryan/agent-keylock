@@ -283,6 +283,14 @@ struct Keylock {
             }
             try FileManager.default.copyItem(at: source, to: destination)
             print("installed \(destination.path)")
+            let old = destination.deletingLastPathComponent().appendingPathComponent("keybank")
+            let oldMarker = old.appendingPathComponent("SKILL.md")
+            if FileManager.default.fileExists(atPath: oldMarker.path),
+               let text = try? String(contentsOf: oldMarker, encoding: .utf8),
+               text.contains("name: keybank") {
+                try FileManager.default.removeItem(at: old)
+                print("removed \(old.path)")
+            }
         }
     }
 
@@ -291,7 +299,7 @@ struct Keylock {
             let marker = destination.appendingPathComponent("SKILL.md")
             guard FileManager.default.fileExists(atPath: marker.path) else { continue }
             let text = try String(contentsOf: marker, encoding: .utf8)
-            guard text.contains("name: keybank") else { continue }
+            guard text.contains("name: keylock") || text.contains("name: keybank") else { continue }
             try FileManager.default.removeItem(at: destination)
             print("removed \(destination.path)")
         }
@@ -301,7 +309,7 @@ struct Keylock {
         let executable = URL(fileURLWithPath: CommandLine.arguments[0]).resolvingSymlinksInPath()
         var directory = executable.deletingLastPathComponent()
         for _ in 0..<8 {
-            let marker = directory.appendingPathComponent("skills/keybank/SKILL.md")
+            let marker = directory.appendingPathComponent("skills/keylock/SKILL.md")
             if FileManager.default.fileExists(atPath: marker.path) {
                 return marker.deletingLastPathComponent()
             }
@@ -309,7 +317,7 @@ struct Keylock {
             if parent.path == directory.path { break }
             directory = parent
         }
-        throw CLIError.message("Could not find skills/keybank next to this keylock binary.")
+        throw CLIError.message("Could not find skills/keylock next to this keylock binary.")
     }
 
     static func skillDestinations(createShared: Bool) -> [URL] {
@@ -332,7 +340,7 @@ struct Keylock {
                 roots.append(root)
             }
         }
-        return roots.map { $0.appendingPathComponent("keybank") }
+        return roots.map { $0.appendingPathComponent("keylock") }
     }
 
     static func doctor() throws {

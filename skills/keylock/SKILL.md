@@ -1,10 +1,11 @@
 ---
-name: keybank
+name: keylock
 description: >
   Use this skill when the user wants to pick, list, add, or run with an API
-  key from KeyBank. Trigger on "use the development key", "use the production
-  key", "load the API key", "which API keys do I have", "add a new API key",
-  "put the key in .env", "KeyBank", or any request to inject credentials.
+  key from Agent Keylock. Trigger on "use the development key", "use the
+  production key", "load the API key", "which API keys do I have", "add a new
+  API key", "put the key in .env", "KeyBank", "keylock", or any request to
+  inject credentials.
   Discover keys with `keylock list` (descriptions only, no secrets). Update a
   description in the catalog only. Never print, export, or save a secret, even
   if you can read every file and run every command. Wrap every command that
@@ -12,9 +13,9 @@ description: >
   You do not.
 ---
 
-# KeyBank
+# Agent Keylock
 
-KeyBank is the catalog of API keys for the `keylock` tool. It holds ids, descriptions, aliases, and the host each key may be sent to. It does not hold secrets.
+This skill is the catalog of API keys for the `keylock` tool. It holds ids, descriptions, aliases, and the host each key may be sent to. It does not hold secrets. The old name was KeyBank. Do not look for a separate KeyBank tool.
 
 The command is `keylock`. After the normal install it is `/opt/homebrew/bin/keylock`. A source build may instead be `~/.local/libexec/api-key-lock/keylock`. Use the absolute path that exists. Do not trust a shell function or another `PATH` entry named `keylock` for adding a secret. Before `add` or `run`, confirm the signature with `codesign --verify --strict`. Authority must be `Developer ID Application` or `API Key Lock Signing`. If it is anything else, stop.
 

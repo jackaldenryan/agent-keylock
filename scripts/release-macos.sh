@@ -33,7 +33,7 @@ cd "$root"
 swift build -c release --product keylock
 mkdir -p "$dist" "$stage/skills"
 cp -f .build/release/keylock "$stage/keylock"
-cp -R skills/keybank "$stage/skills/keybank"
+cp -R skills/keylock "$stage/skills/keylock"
 chmod 755 "$stage/keylock"
 
 /usr/bin/codesign --force --sign "$identity" \
