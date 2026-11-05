@@ -61,21 +61,13 @@ This is the design. It is not a claim that a Keychain Allow dialog can be ignore
 
 ## Quickstart
 
-Requires Homebrew. This installs a binary signed with a Developer ID certificate and notarized by Apple, plus the agent skill. You do not clone the repository, and you do not create a signing certificate. Notarization means Apple checked the signature and scanned the file. It does not mean Apple reviewed or endorsed the program.
+One command. It installs `keylock` and the agent skill. The binary is signed with a Developer ID certificate and notarized by Apple. Notarization means Apple checked the signature and scanned the file. It does not mean Apple reviewed or endorsed the program.
 
 ```bash
 brew install --cask jackaldenryan/tap/agent-keylock
 ```
 
-The command is `keylock`. Check the signature before you type a secret. Do this in your own Terminal, not in an agent session.
-
-```bash
-/usr/bin/codesign --verify --strict --verbose=2 "$(command -v keylock)"
-```
-
-`Authority` should be `Developer ID Application`.
-
-Allow a host, then add a key. Each of these asks for Touch ID. The dialog text is the approval. Cancel if the host in the dialog is not the host you typed. The run dialog does not contain the command. It names the key, the host, and that any local process can use the proxy until that command exits.
+Add a key once, in your own Terminal. Touch ID is the approval. Cancel if the host in the dialog is not the host you typed.
 
 ```bash
 keylock allow-host api.openai.com
@@ -85,26 +77,15 @@ keylock add openai-personal \
   --maps-to OPENAI_API_KEY
 ```
 
-Type the secret when asked. It is not echoed. Do not pass it as an argument, and do not paste it into a chat.
+Type the secret when asked. It is not echoed. Do not paste it into chat.
 
-Confirm a run works:
+Then ask your agent:
 
-```bash
-keylock run openai-personal -- \
-  /bin/sh -c '/usr/bin/curl -sS "$OPENAI_BASE_URL/models"'
+```text
+List my keys. Use my personal OpenAI key to list the available models. Do not print the key, and do not create an environment file.
 ```
 
-You should get a model list. `OPENAI_API_KEY` should be empty. The key never appears in the output. A request with a query string is forwarded. `stream: true` is not. The proxy waits for the full response, so a streaming client can time out.
-
-## Install the agent skill
-
-`brew install` already does this. If you built from source, run:
-
-```bash
-keylock install-skill
-```
-
-That copies the skill to `~/.agents/skills/keybank`, which OpenCode, Claude, Cursor, and several others read. Without the skill, an agent will look for `OPENAI_API_KEY` and fail, or worse, ask you to paste the secret into chat.
+You should get a model list. The key should not appear. The agent should not ask you to paste one.
 
 ## How a program calls the API
 
@@ -176,6 +157,8 @@ The design notes and the red team are in [PLAN.md](PLAN.md) and [REDTEAM.md](RED
 ```bash
 swift test
 ```
+
+A source build does not install the agent skill. Run `keylock install-skill` after `./scripts/sign-and-install.sh` if you are not using Homebrew.
 
 `./scripts/sign-and-install.sh` builds a local copy and signs it with a certificate created on this Mac. That certificate is not the public release. After a local rebuild, move the signing key off the Mac again. It is created under `~/Library/Application Support/APIKeyLock/signing` and `~/Library/Keychains/api-key-lock-signing-db`. An agent that can read those files can sign a fake `keylock`.
 
