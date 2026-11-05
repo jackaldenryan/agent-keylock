@@ -2,7 +2,7 @@
 
 Describe each API key once. Your agent sees those descriptions, picks the one you name, and uses it. You never create an environment file. The agent cannot read the secret.
 
-That is the point of Agent Keylock. You stop keeping keys in files and pasting them into chat. The agent chooses from the descriptions you wrote. A local proxy attaches the secret to an HTTP request for the one host you allowed. The agent does not receive the key, so it cannot print it, save it, or send it somewhere else.
+That is the point of Agent Keylock. You stop keeping keys in files and pasting them into chat. The agent chooses from the descriptions you wrote. A local proxy attaches the secret, and only to an HTTP request for the one host you allowed. The key cannot be printed. It cannot be saved. It cannot be sent anywhere else, including a host an agent was told to use, such as evil.com. The agent never receives the secret, so it has nothing to copy.
 
 Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. It is macOS only.
 
