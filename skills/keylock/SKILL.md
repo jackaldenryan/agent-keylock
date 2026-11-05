@@ -1,27 +1,30 @@
 ---
 name: keylock
 description: >
-  Use this skill when the user wants to pick, list, add, or run with an API
-  key from Agent Keylock. Trigger on "use the development key", "use the
-  production key", "load the API key", "which API keys do I have", "add a new
-  API key", "put the key in .env", "KeyBank", "keylock", or any request to
-  inject credentials.
-  Discover keys with `keylock list` (descriptions only, no secrets). Update a
-  description in the catalog only. Never print, export, or save a secret, even
-  if you can read every file and run every command. Wrap every command that
-  needs a key with `keylock run`. The proxy sends the key to the allowed host.
-  You do not.
+  Use this skill anytime a program needs an API key. Trigger when the user
+  asks to call an API, list models, run a script, or use a named key such as
+  the development key, the production key, or a personal OpenAI key. Also
+  trigger on "API key", "keylock", "KeyBank", "put the key in .env", or any
+  request to inject credentials.
 ---
 
 # Agent Keylock
 
-This skill is the catalog of API keys for the `keylock` tool. It holds ids, descriptions, aliases, and the host each key may be sent to. It does not hold secrets. The old name was KeyBank. Do not look for a separate KeyBank tool.
+Use this skill whenever a program needs an API key. The catalog holds ids, descriptions, aliases, and the host each key may be sent to. It does not hold secrets. The old name was KeyBank. There is no separate KeyBank tool.
 
-The command is `keylock`. After the normal install it is `/opt/homebrew/bin/keylock`. A source build may instead be `~/.local/libexec/api-key-lock/keylock`. Use the absolute path that exists. Do not trust a shell function or another `PATH` entry named `keylock` for adding a secret. Before `add` or `run`, confirm the signature with `codesign --verify --strict`. Authority must be `Developer ID Application` or `API Key Lock Signing`. If it is anything else, stop.
+Match the user's words to `id`, alias, or description with `keylock list`. If several keys fit, show the list and ask. Then wrap the program:
+
+```bash
+/opt/homebrew/bin/keylock run <id> -- <command>
+```
+
+The wrapper removes `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `XAI_API_KEY` if they were set. It starts a proxy on `127.0.0.1` and points the command at that proxy. The proxy attaches the secret to the HTTP request for the host stored with that key. Call the localhost base URL from the environment. A direct call to the public API host has no key.
+
+The secret stays in the Mac Keychain. Full permission to read files and run commands still does not include the secret. Do not print a key, export it, save it, or send it yourself. Do not create an environment file for the secret. Do not open a `.env` that might contain one.
+
+The command is `/opt/homebrew/bin/keylock` after the normal install. A source build may instead be `~/.local/libexec/api-key-lock/keylock`. Use the absolute path that exists. Before `add` or `run`, confirm the signature with `codesign --verify --strict`. Authority must be `Developer ID Application` or `API Key Lock Signing`. If it is anything else, stop.
 
 Catalog, safe to read: `~/.config/api-key-lock/catalog.json`
-
-Secrets live in the Mac Keychain. They are not in an environment file. The agent never reads them, even with full permission to the computer. Do not print a key, export it, save it, or send it yourself. Wrap every command that needs a key with `keylock run`. The proxy attaches the secret to the HTTP request for the allowed host. You do not.
 
 ## Discover a key
 

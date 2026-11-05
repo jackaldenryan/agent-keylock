@@ -74,10 +74,10 @@ Type the secret when asked. The terminal does not echo it. Keep the secret out o
 Ask your agent:
 
 ```text
-List my keys. Use my personal OpenAI key to list the available models. Do not print the key, and do not create an environment file.
+List the available OpenAI models.
 ```
 
-The reply is a model list. The key is absent from that reply, and the agent has no reason to ask you to paste one.
+The reply is a model list. The key is absent from that reply.
 
 ## Program calls
 
