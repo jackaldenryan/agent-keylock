@@ -50,10 +50,10 @@ Type the secret when asked. The terminal does not echo it. Keep the secret out o
 3. Ask your agent:
 
 ```text
-List the available OpenAI models using my OpenAI API key.
+List five available OpenAI models using my OpenAI API key.
 ```
 
-The reply is a model list. The key is absent from that reply.
+The reply names five models. The key is absent from that reply.
 
 ## How often Touch ID asks
 
