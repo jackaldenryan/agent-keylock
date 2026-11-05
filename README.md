@@ -14,7 +14,7 @@ Agent Keylock is a Mac command-line tool and an agent skill, shipped together. T
 | You do not create or maintain an environment file | ✅ |
 | The installed skill tells the agent how to run, so it does not ask you to paste a key into chat | ✅ |
 | Stores each key in the encrypted macOS Keychain, not in a file | ✅ |
-| A search of the disk for `.env` files or pasted API keys does not find the secret | ✅ |
+| Malware that searches the disk for environment files and pasted API keys does not find the secret | ✅ |
 | A prompt-injected agent that reads files, the environment, or the catalog does not find the secret | ✅ |
 | A prompt-injected agent cannot print the key, save it, or attach it to a request | ✅ |
 | A prompt-injected agent cannot send the key to a host you did not allow, including one it was told to use | ✅ |
