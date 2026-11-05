@@ -6,6 +6,23 @@ An agent can use a key. It cannot print it, export it, save it, or send it anywh
 
 Agent Keylock is a Mac command-line tool and an agent skill, shipped together. The command is `keylock`. It is macOS only.
 
+## What it does
+
+| | |
+| --- | :---: |
+| Stores each key in the encrypted macOS Keychain, not in a file | ✅ |
+| A search of the disk for `.env` files or pasted API keys does not find the secret | ✅ |
+| A prompt-injected agent that reads files, the environment, or the catalog does not find the secret | ✅ |
+| A prompt-injected agent cannot print the key, save it, or attach it to a request | ✅ |
+| A prompt-injected agent cannot send the key to a host you did not allow, including one it was told to use | ✅ |
+| The only use of a key is an HTTP request to the one host you already allowed | ✅ |
+| Touch ID can be required for every use of a key. That is the default | ✅ |
+| Adding a key or allowing a host always requires Touch ID | ✅ |
+| You do not create or maintain an environment file | ✅ |
+| You describe each key once. The agent sees those descriptions, picks the one you name, and never sees the secret | ✅ |
+| The installed skill tells the agent how to run, so it does not ask you to paste a key into chat | ✅ |
+| The release is signed with a Developer ID certificate and notarized by Apple | ✅ |
+
 ## What an agent can and cannot do
 
 A coding agent with full permission can read your files, run your commands, and write programs. That is the case this tool is built for. Full permission does not put the key in those files, in that command, or in a program the agent writes.

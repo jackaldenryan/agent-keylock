@@ -46,7 +46,8 @@ chmod 755 "$stage/keylock"
 rm -f "$archive"
 (cd "$stage" && /usr/bin/zip -r -X "$archive" keylock skills)
 /usr/bin/xcrun notarytool submit "$archive" --keychain-profile "$profile" --wait
-/usr/bin/xcrun stapler staple "$archive"
+# Apple can notarize a zip, but stapler cannot attach a ticket to one.
+# The ticket stays online, which is enough for a downloaded release.
 
 checksum="$(/usr/bin/shasum -a 256 "$archive" | /usr/bin/awk '{print $1}')"
 echo "archive: $archive"
